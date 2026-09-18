@@ -367,7 +367,9 @@ main section{padding:110px 6vw;position:relative;}
 .craft-bar{flex:1;height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;}
 .craft-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--magenta));}
 
-.activity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:28px;}
+.activity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:20px;}
+.addon-subheading{margin-top:16px;}
+.addon-subheading:first-of-type{margin-top:0;}
 .activity-item{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;font-size:.85rem;}
 .activity-item:hover{border-color:var(--cyan);}
 .activity-item input{margin-top:3px;}

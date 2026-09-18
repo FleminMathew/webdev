@@ -24,15 +24,6 @@ const SPACECRAFT = [
     desc:"Antimatter-assisted flagship with an AI butler on every deck.", bars:{speed:98,luxury:100,safety:92} },
 ];
 
-const ACTIVITIES = [
-  { id:"zerog",    name:"Zero-G Yoga Retreat",        cost:15000 },
-  { id:"olympus",  name:"Olympus Mons Summit Climb",  cost:120000 },
-  { id:"dust",     name:"Dust-Surfing Expedition",    cost:60000 },
-  { id:"stars",    name:"Stargazing Dome Dinner",     cost:25000 },
-  { id:"canyon",   name:"Valles Canyon Skydive",      cost:95000 },
-  { id:"phobos",   name:"Phobos Zero-G Gala",         cost:40000 },
-  { id:"orbitview", name:"Orbital Viewing Deck Access", cost:30000 },
-];
 
 const CATALOG = [
   // Cities
@@ -109,6 +100,21 @@ const CATALOG = [
 ];
 
 const CATEGORY_LABEL = { city:"City", sightseeing:"Sightseeing", hotel:"Hotel & Resort", vip:"VIP Experience" };
+const ADDON_CATEGORY_LABEL = { ...CATEGORY_LABEL, station:"Station Amenity" };
+
+function parsePriceToNumber(priceStr) {
+  const m = priceStr.match(/¤([\d.]+)([KM])/);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  return m[2] === "M" ? n * 1_000_000 : n * 1_000;
+}
+
+/* Every catalog experience doubles as a bookable planner add-on, priced from its own
+   listing — so what you browse in the catalog is exactly what you can add to your trip. */
+const ACTIVITIES = [
+  ...CATALOG.map(item => ({ id: item.id, name: item.name, cost: parsePriceToNumber(item.price), category: item.category })),
+  { id: "orbitview", name: "Orbital Viewing Deck Access", cost: 30000, category: "station" },
+];
 
 const TIERS = {
   pioneer:  { craft:"aurora", accommodation:"standard",  destination:"elysium" },
@@ -630,19 +636,33 @@ function renderCraftGrid() {
 renderCraftGrid();
 
 const activityGrid = document.getElementById("activityGrid");
-ACTIVITIES.forEach(a => {
-  const label = document.createElement("label");
-  label.className = "activity-item";
-  label.innerHTML = `
-    <input type="checkbox" value="${a.id}">
-    <span>${a.name}<span class="a-price">${fmtMoney(a.cost)} / traveller</span></span>
-  `;
-  label.querySelector("input").addEventListener("change", (e) => {
-    if (e.target.checked) state.activities.push(a.id);
-    else state.activities = state.activities.filter(id => id !== a.id);
-    recalcAll();
+const ADDON_CATEGORY_ORDER = ["city", "sightseeing", "hotel", "vip", "station"];
+ADDON_CATEGORY_ORDER.forEach(cat => {
+  const items = ACTIVITIES.filter(a => a.category === cat);
+  if (!items.length) return;
+
+  const heading = document.createElement("p");
+  heading.className = "field-label-block addon-subheading";
+  heading.textContent = ADDON_CATEGORY_LABEL[cat];
+  activityGrid.appendChild(heading);
+
+  const grid = document.createElement("div");
+  grid.className = "activity-grid";
+  items.forEach(a => {
+    const label = document.createElement("label");
+    label.className = "activity-item";
+    label.innerHTML = `
+      <input type="checkbox" value="${a.id}">
+      <span>${a.name}<span class="a-price">${fmtMoney(a.cost)} / traveller</span></span>
+    `;
+    label.querySelector("input").addEventListener("change", (e) => {
+      if (e.target.checked) state.activities.push(a.id);
+      else state.activities = state.activities.filter(id => id !== a.id);
+      recalcAll();
+    });
+    grid.appendChild(label);
   });
-  activityGrid.appendChild(label);
+  activityGrid.appendChild(grid);
 });
 
 function computeCost() {
@@ -1268,19 +1288,19 @@ function showTyping() {
 /* Rule-based intent scoring engine — lightweight keyword NLP, not decorative */
 const INTENTS = [
   { key: "adventure", words: ["adventure","adrenaline","extreme","thrill","climb","surf","explore","dust","dangerous","expedition"],
-    destination: "olympus", craft: "zephyr", accommodation: "panoramic", activities: ["olympus","dust","canyon"],
-    reply: (d,c) => `For adrenaline, I'd chart you to <strong>${d.name}</strong> aboard the <strong>${c.name}</strong> — fast enough to maximize surface time. I've queued the Summit Climb, Dust-Surfing, and Canyon Skydive.` },
+    destination: "olympus", craft: "zephyr", accommodation: "panoramic", activities: ["s-olympus","s-coprates","v-rover"],
+    reply: (d,c) => `For adrenaline, I'd chart you to <strong>${d.name}</strong> aboard the <strong>${c.name}</strong> — fast enough to maximize surface time. I've queued the Summit Overlook, a Dune Descent, and a Private Rover Expedition.` },
   { key: "relax", words: ["relax","honeymoon","romantic","calm","peaceful","spa","quiet","wellness","couple"],
-    destination: "arcadia", craft: "nova", accommodation: "sovereign", activities: ["stars","zerog"],
-    reply: (d,c) => `A romantic pairing: <strong>${d.name}</strong> for the aurora skies, aboard the <strong>${c.name}</strong> for the smoothest possible crossing. I've added Stargazing Dinner and a Zero-G Yoga session.` },
+    destination: "arcadia", craft: "nova", accommodation: "sovereign", activities: ["s-aurorafields","h-arcadia"],
+    reply: (d,c) => `A romantic pairing: <strong>${d.name}</strong> for the aurora skies, aboard the <strong>${c.name}</strong> for the smoothest possible crossing. I've added the Aurora Fields excursion and time at the Aurora Domes Resort's thermal pools.` },
   { key: "luxury", words: ["luxury","best","expensive","budget is not a problem","money no object","premium","sovereign","spare no expense","exclusive"],
-    destination: "olympus", craft: "nova", accommodation: "sovereign", activities: ["olympus","stars","phobos"],
-    reply: (d,c) => `Understood — nothing but the finest. <strong>${d.name}</strong>, the <strong>${c.name}</strong> flagship, and a Sovereign Crater Villa. I've layered in the Summit Climb, Stargazing Dinner, and a Phobos Zero-G Gala.` },
+    destination: "olympus", craft: "nova", accommodation: "sovereign", activities: ["v-villa","s-gale","v-gala"],
+    reply: (d,c) => `Understood — nothing but the finest. <strong>${d.name}</strong>, the <strong>${c.name}</strong> flagship, and a Sovereign Crater Villa. I've layered in a Gale Crater Earthrise Overlook and a Phobos Zero-G Gala.` },
   { key: "family", words: ["family","kids","children","safe","safety first","parents","child"],
-    destination: "elysium", craft: "aurora", accommodation: "panoramic", activities: ["stars"],
-    reply: (d,c) => `For families I recommend <strong>${d.name}</strong> — the most walkable, medically-supported territory — aboard the well-shielded <strong>${c.name}</strong>. Kept the activity list gentle with a Stargazing Dinner.` },
+    destination: "elysium", craft: "aurora", accommodation: "panoramic", activities: ["s-aurorafields"],
+    reply: (d,c) => `For families I recommend <strong>${d.name}</strong> — the most walkable, medically-supported territory — aboard the well-shielded <strong>${c.name}</strong>. Kept the activity list gentle with the Aurora Fields excursion.` },
   { key: "fast", words: ["fast","quick","short","soon","hurry","little time","brief"],
-    destination: "phobos", craft: "nova", accommodation: "panoramic", activities: ["phobos"],
+    destination: "phobos", craft: "nova", accommodation: "panoramic", activities: ["v-gala"],
     reply: (d,c) => `Time-limited? <strong>${d.name}</strong> is the shortest hop from any transit lane, and the <strong>${c.name}</strong> cuts transit to just 45 sols each way.` },
 ];
 

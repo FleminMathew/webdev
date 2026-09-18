@@ -305,8 +305,8 @@
               </select>
             </label>
           </div>
-          <p class="field-label-block">Curated Activities</p>
-          <div class="activity-grid" id="activityGrid"></div>
+          <p class="field-label-block">Curated Activities — every Mars Travel Experience, bookable as an add-on</p>
+          <div id="activityGrid"></div>
           <button class="btn btn-ghost planner-back">← Back</button>
           <button class="btn btn-primary planner-next">Continue to Confirm →</button>
         </div>
@@ -320,16 +320,39 @@
               <strong id="summaryTotal">¤0</strong>
             </div>
           </div>
-          <label class="field">
-            <span>Manifest Name</span>
-            <input type="text" id="travellerName" placeholder="e.g. Cassian Voss">
-          </label>
-          <button class="btn btn-ghost planner-back">← Back</button>
-          <button class="btn btn-primary" id="confirmBooking">Generate Boarding Pass ⇥</button>
+          <form id="travelerForm">
+            <p class="field-label-block">Traveler Information</p>
+            <div class="field-grid">
+              <label class="field">
+                <span>Full Name</span>
+                <input type="text" id="travellerName" placeholder="e.g. Cassian Voss" required>
+              </label>
+              <label class="field">
+                <span>Universal Citizen ID</span>
+                <input type="text" id="travellerCitizenId" placeholder="e.g. EARTH-4471-0092" required>
+              </label>
+              <label class="field">
+                <span>Email for Mission Updates</span>
+                <input type="email" id="travellerEmail" placeholder="you@example.com" required>
+              </label>
+              <label class="field">
+                <span>Date of Birth</span>
+                <input type="date" id="travellerDob" required>
+              </label>
+              <label class="field">
+                <span>Emergency Contact (Earth-side)</span>
+                <input type="text" id="travellerEmergencyContact" placeholder="Name & relation">
+              </label>
+            </div>
+            <button class="btn btn-ghost planner-back" type="button">← Back</button>
+            <button class="btn btn-primary" id="confirmBooking" type="submit">Generate Boarding Pass ⇥</button>
+          </form>
 
           <div class="boarding-pass" id="boardingPass">
             <div class="bp-row"><span>MANIFEST ID</span><strong id="bpId"></strong></div>
             <div class="bp-row"><span>PASSENGER</span><strong id="bpName"></strong></div>
+            <div class="bp-row"><span>CITIZEN ID</span><strong id="bpCitizenId"></strong></div>
+            <div class="bp-row"><span>AGE</span><strong id="bpAge"></strong></div>
             <div class="bp-row"><span>VESSEL</span><strong id="bpCraft"></strong></div>
             <div class="bp-row"><span>DESTINATION</span><strong id="bpDest"></strong></div>
             <div class="bp-row"><span>TRANSIT + STAY</span><strong id="bpDuration"></strong></div>
