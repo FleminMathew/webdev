@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aetherion Voyages — Mars, 2100</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23ff7a3d%22/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div class="scanlines" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<div id="loader">
+  <div class="loader-inner">
+    <div class="loader-ring"></div>
+    <p class="loader-text" id="loaderText">INITIALIZING NEURAL UPLINK</p>
+    <div class="loader-bar"><span id="loaderProgress"></span></div>
+  </div>
+</div>
+
+<header class="hud-nav">
+  <div class="hud-logo">
+    <span class="hud-logo-mark">◈</span>
+    <div class="hud-logo-text">
+      <strong>AETHERION</strong>
+      <small>VOYAGES · EST. 2087</small>
+    </div>
+  </div>
+
+  <nav class="hud-links" id="hudLinks">
+    <a href="#destinations">Destinations</a>
+    <a href="#luxury">Luxury</a>
+    <a href="#orbital">Orbital View</a>
+    <a href="#planner">Journey Planner</a>
+    <a href="#risk">Mission Risk</a>
+    <a href="#aria" id="navAria">ARIA AI</a>
+    <a href="#terra" id="navTerra">Earth News</a>
+  </nav>
+
+  <div class="hud-stats">
+    <div class="hud-stat">
+      <span class="hud-stat-label">MARS SOL</span>
+      <span class="hud-stat-value" id="marsSol">—</span>
+    </div>
+    <div class="hud-stat">
+      <span class="hud-stat-label">MTC LOCAL</span>
+      <span class="hud-stat-value" id="marsTime">—</span>
+    </div>
+    <div class="hud-stat">
+      <span class="hud-stat-label">EARTH–MARS</span>
+      <span class="hud-stat-value" id="marsDistance">—</span>
+    </div>
+  </div>
+
+  <button class="hud-burger" id="hudBurger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+</header>
+
+<main>
+
+  <section id="hero">
+    <div class="hero-grid" aria-hidden="true"></div>
+    <div class="hero-content">
+      <p class="eyebrow">// PASSAGE CLASS: SOVEREIGN — YEAR 2100</p>
+      <h1 class="glitch" data-text="Mars Awaits. Travel Beyond the Extraordinary.">Mars Awaits<br>Travel Beyond the Extraordinary.</h1>
+      <p class="hero-sub">Charter a private crossing to the Red World. Bespoke spacecraft, orbital resorts,
+        and a personal AI concierge — engineered for travellers who have already seen everything Earth has to offer.</p>
+      <div class="hero-cta">
+        <button class="btn btn-primary" id="ctaPlan">Begin Expedition ↴</button>
+        <button class="btn btn-ghost" id="ctaAria">Ask ARIA ✧</button>
+      </div>
+      <div class="hero-metrics">
+        <div><strong id="metricTravellers">128,402</strong><span>Travellers Ferried</span></div>
+        <div><strong>20</strong><span>Cities, Sights &amp; VIP Experiences</span></div>
+        <div><strong>45–210</strong><span>Sol Transit Range</span></div>
+      </div>
+    </div>
+    <div class="hero-mars" id="heroMars">
+      <div class="mars-sphere"></div>
+      <div class="mars-ring"></div>
+      <div class="mars-moon mars-moon--phobos"></div>
+      <div class="mars-moon mars-moon--deimos"></div>
+    </div>
+    <button class="scroll-cue" id="scrollCue" aria-label="Scroll">▾</button>
+  </section>
+
+  <section class="tracker-banner" id="tracker" aria-label="Live fleet tracker">
+    <div class="tracker-bg" aria-hidden="true"></div>
+    <div class="tracker-track">
+      <div class="tracker-body">
+        <div class="tracker-earth-sphere"></div>
+        <span class="tracker-body-label">EARTH</span>
+      </div>
+
+      <div class="tracker-path">
+        <div class="tracker-ship-wrap">
+          <span class="ship-trail"></span>
+          <span class="ship-core"></span>
+        </div>
+        <div class="tracker-ship-wrap delay2">
+          <span class="ship-trail"></span>
+          <span class="ship-core"></span>
+        </div>
+      </div>
+
+      <div class="tracker-body">
+        <div class="tracker-mars-sphere"></div>
+        <span class="tracker-body-label">MARS</span>
+      </div>
+    </div>
+
+    <div class="tracker-info">
+      <span class="tracker-label">// LIVE FLEET TRACKER</span>
+      <strong id="trackerVessel">—</strong>
+      <span id="trackerStatus">—</span>
+    </div>
+  </section>
+
+  <section id="destinations">
+    <div class="section-head">
+      <p class="eyebrow">// 01 — MARS TRAVEL EXPERIENCE</p>
+      <h2>Choose Your Coordinates</h2>
+      <p class="section-sub">Six live-mapped territories, twenty curated experiences — domed cities, summit sightseeing, orbital hotels, and by-invitation VIP itineraries. Select a marker or filter the catalog below.</p>
+    </div>
+
+    <div class="map-wrap">
+      <div class="mars-map" id="marsMap">
+        <div class="map-sphere"></div>
+        <div class="map-grid-overlay"></div>
+        <!-- hotspots injected via JS but kept here for no-js fallback -->
+        <button class="hotspot" style="top:22%; left:46%" data-dest="olympus" aria-label="Olympus Skyport"><span class="hotspot-pulse"></span></button>
+        <button class="hotspot" style="top:52%; left:33%" data-dest="valles" aria-label="Valles Marineris Cliff Resort"><span class="hotspot-pulse"></span></button>
+        <button class="hotspot" style="top:63%; left:60%" data-dest="elysium" aria-label="Elysium Dome Metropolis"><span class="hotspot-pulse"></span></button>
+        <button class="hotspot" style="top:16%; left:70%" data-dest="phobos" aria-label="Phobos Orbital Sanctuary"><span class="hotspot-pulse"></span></button>
+        <button class="hotspot" style="top:38%; left:78%" data-dest="arcadia" aria-label="Arcadia Aurora Domes"><span class="hotspot-pulse"></span></button>
+        <button class="hotspot" style="top:74%; left:40%" data-dest="tharsis" aria-label="Tharsis Bio-Reserve"><span class="hotspot-pulse"></span></button>
+      </div>
+
+      <div class="dest-panel" id="destPanel">
+        <p class="dest-panel-hint">◂ Select a coordinate marker to open its dossier</p>
+      </div>
+    </div>
+
+    <div class="catalog-tabs" id="catalogTabs">
+      <button class="catalog-tab active" data-filter="all">All Experiences</button>
+      <button class="catalog-tab" data-filter="city">Cities</button>
+      <button class="catalog-tab" data-filter="sightseeing">Sightseeing Spots</button>
+      <button class="catalog-tab" data-filter="hotel">Hotels &amp; Resorts</button>
+      <button class="catalog-tab" data-filter="vip">VIP Experiences</button>
+    </div>
+
+    <div class="dest-grid" id="destGrid"></div>
+  </section>
+
+  <section id="luxury">
+    <div class="section-head">
+      <p class="eyebrow">// 02 — FOR THE SOVEREIGN TRAVELLER</p>
+      <h2>Tiers of Passage</h2>
+      <p class="section-sub">Every itinerary ships with a dedicated AI concierge, private shuttle transfer, and a physician-grade biosuite. Beyond that, the tier is yours to define.</p>
+    </div>
+
+    <div class="tier-grid">
+      <article class="tier-card">
+        <h3>Pioneer</h3>
+        <p class="tier-price">from ¤1.2M <span>/ traveller</span></p>
+        <ul>
+          <li>Aurora Clipper solar-liner passage</li>
+          <li>Panoramic Hab Suite, Elysium Dome City</li>
+          <li>Shared observation decks</li>
+          <li>Standard AI concierge access</li>
+        </ul>
+        <button class="btn btn-outline tier-select" data-tier="pioneer">Select Pioneer</button>
+      </article>
+
+      <article class="tier-card tier-card--featured">
+        <span class="tier-badge">Most Chartered</span>
+        <h3>Diplomat</h3>
+        <p class="tier-price">from ¤3.8M <span>/ traveller</span></p>
+        <ul>
+          <li>Zephyr Voidrunner fusion-torch yacht</li>
+          <li>Private Dome Villa, zero-g spa access</li>
+          <li>Curated expedition (Olympus / Valles)</li>
+          <li>Personal AI itinerary architect</li>
+        </ul>
+        <button class="btn btn-primary tier-select" data-tier="diplomat">Select Diplomat</button>
+      </article>
+
+      <article class="tier-card">
+        <h3>Sovereign</h3>
+        <p class="tier-price">from ¤9.5M <span>/ traveller</span></p>
+        <ul>
+          <li>Nova Ascendant antimatter flagship</li>
+          <li>Private Crater Villa + full staff</li>
+          <li>Bespoke full-planet expedition</li>
+          <li>Dedicated AI + human dual concierge</li>
+        </ul>
+        <button class="btn btn-outline tier-select" data-tier="sovereign">Select Sovereign</button>
+      </article>
+    </div>
+  </section>
+
+  <section id="orbital" aria-label="Orbital viewing deck">
+    <div class="section-head">
+      <p class="eyebrow">// 03 — ARES HORIZON ORBITAL STATION</p>
+      <h2>The View From Orbit</h2>
+      <p class="section-sub">Suspended 6,020km above the Tharsis bulge, the station's rotating holo-deck projects a live 3D feed of Mars. Drag to look from any angle, then pick your lighting.</p>
+    </div>
+
+    <div class="orbital-viewer">
+      <canvas id="orbitalCanvas" width="480" height="300"></canvas>
+      <div class="orbital-scan" aria-hidden="true"></div>
+      <div class="orbital-drag-hint" id="orbitalDragHint">🖐 Drag to rotate</div>
+      <div class="orbital-caption">
+        <strong id="orbitalModeLabel">—</strong>
+        <span id="orbitalModeDesc">—</span>
+      </div>
+      <div class="orbital-stats">
+        <div><span>Altitude</span><strong>6,020 km</strong></div>
+        <div><span>Viewing Angle</span><strong id="orbitalAngle">0°</strong></div>
+        <div><span>Next Sunrise</span><strong id="orbitalTimer">—</strong></div>
+      </div>
+    </div>
+
+    <div class="orbital-modes" id="orbitalModes">
+      <button class="mode-btn active" data-mode="sunrise">🌅 Sunrise Terminator</button>
+      <button class="mode-btn" data-mode="night">🌌 Night-Side City Lights</button>
+      <button class="mode-btn" data-mode="panorama">🪐 Full Planetary Panorama</button>
+    </div>
+
+    <button class="btn btn-primary" id="orbitalAddBtn">Add Orbital Viewing Deck to Itinerary →</button>
+  </section>
+
+  <section id="planner">
+    <div class="section-head">
+      <p class="eyebrow">// 04 — JOURNEY PLANNER</p>
+      <h2>Compose Your Expedition</h2>
+      <p class="section-sub">Explore your options, select your vessel, customize the experience, and confirm your manifest — live-priced at every step.</p>
+    </div>
+
+    <div class="planner">
+      <ol class="planner-steps" id="plannerSteps">
+        <li data-step="1" class="active"><span>01</span>Explore</li>
+        <li data-step="2"><span>02</span>Select</li>
+        <li data-step="3"><span>03</span>Customize</li>
+        <li data-step="4"><span>04</span>Confirm</li>
+      </ol>
+
+      <div class="planner-body">
+
+        <div class="planner-panel active" data-panel="1">
+          <h3>Explore — Departure &amp; Destination</h3>
+          <div class="field-grid">
+            <label class="field">
+              <span>Departure Gate</span>
+              <select id="departure">
+                <option value="tranquility">Tranquility Space Elevator (Earth)</option>
+                <option value="artemis">Artemis Orbital Gateway (Lunar)</option>
+                <option value="equatorial">Equatorial Launch Ring (Earth)</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Destination</span>
+              <select id="plannerDestination"></select>
+            </label>
+            <label class="field">
+              <span>Travellers in Party</span>
+              <input type="number" id="travellers" min="1" max="12" value="2">
+            </label>
+          </div>
+          <button class="btn btn-primary planner-next">Continue to Select →</button>
+        </div>
+
+        <div class="planner-panel" data-panel="2">
+          <h3>Select — Spacecraft</h3>
+          <div class="craft-grid" id="craftGrid"></div>
+          <button class="btn btn-ghost planner-back">← Back</button>
+          <button class="btn btn-primary planner-next">Continue to Customize →</button>
+        </div>
+
+        <div class="planner-panel" data-panel="3">
+          <h3>Customize — Stay &amp; Activities</h3>
+          <div class="field-grid">
+            <label class="field">
+              <span>Accommodation</span>
+              <select id="accommodation">
+                <option value="standard" data-mult="1">Standard Hab Suite</option>
+                <option value="panoramic" data-mult="2.2" selected>Panoramic Dome Suite</option>
+                <option value="sovereign" data-mult="4">Sovereign Crater Villa</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Surface Stay (sols)</span>
+              <select id="stayLength">
+                <option value="5">5 sols</option>
+                <option value="10" selected>10 sols</option>
+                <option value="20">20 sols</option>
+                <option value="40">40 sols</option>
+              </select>
+            </label>
+          </div>
+          <p class="field-label-block">Curated Activities</p>
+          <div class="activity-grid" id="activityGrid"></div>
+          <button class="btn btn-ghost planner-back">← Back</button>
+          <button class="btn btn-primary planner-next">Continue to Confirm →</button>
+        </div>
+
+        <div class="planner-panel" data-panel="4">
+          <h3>Confirm — Manifest Summary</h3>
+          <div class="summary-wrap">
+            <div class="summary-lines" id="summaryLines"></div>
+            <div class="summary-total">
+              <span>Total Charter Cost</span>
+              <strong id="summaryTotal">¤0</strong>
+            </div>
+          </div>
+          <label class="field">
+            <span>Manifest Name</span>
+            <input type="text" id="travellerName" placeholder="e.g. Cassian Voss">
+          </label>
+          <button class="btn btn-ghost planner-back">← Back</button>
+          <button class="btn btn-primary" id="confirmBooking">Generate Boarding Pass ⇥</button>
+
+          <div class="boarding-pass" id="boardingPass">
+            <div class="bp-row"><span>MANIFEST ID</span><strong id="bpId"></strong></div>
+            <div class="bp-row"><span>PASSENGER</span><strong id="bpName"></strong></div>
+            <div class="bp-row"><span>VESSEL</span><strong id="bpCraft"></strong></div>
+            <div class="bp-row"><span>DESTINATION</span><strong id="bpDest"></strong></div>
+            <div class="bp-row"><span>TRANSIT + STAY</span><strong id="bpDuration"></strong></div>
+            <div class="bp-row"><span>TOTAL</span><strong id="bpTotal"></strong></div>
+            <div class="bp-code" id="bpCode"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="risk">
+    <div class="section-head">
+      <p class="eyebrow">// 05 — MISSION RISK INTELLIGENCE</p>
+      <h2>Know Before You Launch</h2>
+      <p class="section-sub">Live-modelled against your current planner selections. Every charter ships with a physician-grade biosuite and 24/7 AI health monitoring.</p>
+    </div>
+
+    <div class="risk-grid">
+      <div class="gauge-card">
+        <svg class="gauge" viewBox="0 0 120 120"><circle class="gauge-track" cx="60" cy="60" r="52"></circle><circle class="gauge-fill" id="gaugeRadiation" cx="60" cy="60" r="52"></circle></svg>
+        <h4>Radiation Exposure</h4>
+        <p id="radiationLabel">—</p>
+      </div>
+      <div class="gauge-card">
+        <svg class="gauge" viewBox="0 0 120 120"><circle class="gauge-track" cx="60" cy="60" r="52"></circle><circle class="gauge-fill" id="gaugeGravity" cx="60" cy="60" r="52"></circle></svg>
+        <h4>Gravity Adaptation</h4>
+        <p id="gravityLabel">—</p>
+      </div>
+      <div class="gauge-card">
+        <svg class="gauge" viewBox="0 0 120 120"><circle class="gauge-track" cx="60" cy="60" r="52"></circle><circle class="gauge-fill" id="gaugeStorm" cx="60" cy="60" r="52"></circle></svg>
+        <h4>Dust Storm Probability</h4>
+        <p id="stormLabel">—</p>
+      </div>
+      <div class="mitigation-card">
+        <h4>Active Safeguards</h4>
+        <ul id="mitigationList"></ul>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="footer-top">
+    <div>
+      <strong>AETHERION VOYAGES</strong>
+      <p>Chartering humanity beyond Earth since 2087.</p>
+    </div>
+    <div class="footer-links">
+      <a href="#destinations">Destinations</a>
+      <a href="#luxury">Luxury Tiers</a>
+      <a href="#planner">Planner</a>
+      <a href="#risk">Risk Intelligence</a>
+    </div>
+  </div>
+  <p class="footer-fine">Transit times, gravity adaptation and radiation figures are illustrative mission estimates generated by the ARIA advisory model. © 2100 Aetherion Voyages Interplanetary Holdings.</p>
+</footer>
+
+<button id="ariaToggle" aria-label="Open ARIA AI Assistant">
+  <span class="aria-orb"></span>
+  ARIA
+</button>
+
+<div id="ariaPanel" class="aria-panel" aria-hidden="true">
+  <div class="aria-head">
+    <div>
+      <strong>ARIA</strong>
+      <small>Autonomous Retinal Interplanetary Assistant</small>
+    </div>
+    <button id="ariaClose" aria-label="Close">✕</button>
+  </div>
+
+  <div class="aria-messages" id="ariaMessages"></div>
+
+  <div class="aria-chips" id="ariaChips">
+    <button class="chip" data-q="I want an adrenaline-fuelled adventure">Adventure seeker</button>
+    <button class="chip" data-q="This is a romantic honeymoon trip, keep it relaxing">Honeymoon / relax</button>
+    <button class="chip" data-q="Money is no object, give me the best of everything">Spare no expense</button>
+    <button class="chip" data-q="I'm travelling with family and kids, keep it safe">Family trip</button>
+    <button class="chip" data-q="How risky is the radiation exposure?">Ask about risk</button>
+  </div>
+
+  <form id="ariaForm" class="aria-input">
+    <input type="text" id="ariaInput" placeholder="Tell ARIA what kind of journey you want…" autocomplete="off">
+    <button type="submit" aria-label="Send">➤</button>
+  </form>
+</div>
+
+<button id="terraToggle" aria-label="Open TERRA Earth News Relay">
+  <span class="terra-orb"></span>
+  TERRA
+</button>
+
+<div id="terraPanel" class="aria-panel terra-panel" aria-hidden="true">
+  <div class="aria-head">
+    <div>
+      <strong>TERRA</strong>
+      <small>Terrestrial Relay Agent — Earth News for Mars Travellers</small>
+    </div>
+    <button id="terraClose" aria-label="Close">✕</button>
+  </div>
+
+  <p class="terra-delay" id="terraDelay">Signal delay from Earth: —</p>
+
+  <div class="aria-messages" id="terraMessages"></div>
+
+  <div class="aria-chips" id="terraChips">
+    <button class="chip" data-cat="technology">Technology</button>
+    <button class="chip" data-cat="culture">Culture &amp; Arts</button>
+    <button class="chip" data-cat="sports">Sports</button>
+    <button class="chip" data-cat="environment">Environment</button>
+    <button class="chip" data-cat="space">Space Program</button>
+    <button class="chip" data-cat="politics">Politics</button>
+    <button class="chip" data-cat="digest">Full Digest</button>
+  </div>
+
+  <form id="terraForm" class="aria-input">
+    <input type="text" id="terraInput" placeholder="Ask TERRA what's happening on Earth…" autocomplete="off">
+    <button type="submit" aria-label="Send">➤</button>
+  </form>
+</div>
+
+<div class="hover-preview" id="hoverPreview"></div>
+
+<div class="detail-view" id="detailView" aria-hidden="true">
+  <button class="detail-back" id="detailBack">← Back to Catalog</button>
+  <div class="detail-scroll">
+    <div class="detail-hero" id="detailHero"></div>
+    <div class="detail-body">
+      <div class="detail-tags" id="detailTags"></div>
+      <h2 id="detailTitle"></h2>
+      <p class="detail-region" id="detailRegionLine"></p>
+      <p class="detail-price" id="detailPrice"></p>
+      <p class="detail-desc" id="detailDesc"></p>
+      <p class="detail-gallery-caption">Holo-rendered preview gallery — captured by ARIA's onsite imaging drones</p>
+      <div class="detail-gallery" id="detailGallery"></div>
+      <div class="detail-actions">
+        <button class="btn btn-ghost" id="detailViewMap">View on Orbital Map</button>
+        <button class="btn btn-primary" id="detailPlan">Plan a Journey Here →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
