@@ -692,13 +692,28 @@ function buildSummary() {
   updateRisk();
 }
 
-document.getElementById("confirmBooking").addEventListener("click", () => {
+function calcAge(dobStr) {
+  const dob = new Date(dobStr);
+  if (isNaN(dob)) return "—";
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const m = now.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
+  return age >= 0 && age < 130 ? age : "—";
+}
+
+document.getElementById("travelerForm").addEventListener("submit", (e) => {
+  e.preventDefault();
   const { craft, total, duration } = computeCost();
   const dest = DESTINATIONS[state.destination];
   const name = document.getElementById("travellerName").value.trim() || "Guest Traveller";
+  const citizenId = document.getElementById("travellerCitizenId").value.trim() || "UNVERIFIED";
+  const age = calcAge(document.getElementById("travellerDob").value);
   const id = "AV-" + Math.random().toString(36).slice(2, 6).toUpperCase() + "-" + Math.floor(Math.random() * 9000 + 1000);
   document.getElementById("bpId").textContent = id;
   document.getElementById("bpName").textContent = name;
+  document.getElementById("bpCitizenId").textContent = citizenId;
+  document.getElementById("bpAge").textContent = age;
   document.getElementById("bpCraft").textContent = craft.name;
   document.getElementById("bpDest").textContent = dest.name;
   document.getElementById("bpDuration").textContent = duration + " sols";
