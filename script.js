@@ -849,23 +849,28 @@ const orbitalCanvas = document.getElementById("orbitalCanvas");
 const orbitalCtx = orbitalCanvas.getContext("2d");
 const ORBITAL_W = orbitalCanvas.width, ORBITAL_H = orbitalCanvas.height;
 
-const LIGHT_PRESETS = {
-  sunrise:  { dir: normalize3(0.95, 0.15, 0.25), rim: [255, 170, 90], ambient: 0.10 },
-  night:    { dir: normalize3(-0.25, 0.15, -0.95), rim: [92, 200, 255], ambient: 0.05 },
-  panorama: { dir: normalize3(0.35, 0.25, 0.9), rim: [120, 190, 255], ambient: 0.28 },
-};
-
-function normalize3(x, y, z) {
-  const len = Math.sqrt(x * x + y * y + z * z) || 1;
-  return [x / len, y / len, z / len];
-}
-
 /* Pixel-level sampling (getImageData) would taint the canvas when the page is opened
    via file:// — the browser treats locally-loaded images as cross-origin in that case.
    So this renderer only ever draws (drawImage/fillRect), never reads pixels back,
-   which works identically under file:// and a real server. It fakes the sphere by
-   painting many thin vertical longitude strips, each foreshortened by cos(theta) —
-   the classic pre-WebGL "orange slice" globe technique. */
+   which works identically under file:// and a real server. The sphere is drawn as a
+   single continuous 180°-wide slice of the equirect texture clipped to an ellipse —
+   an earlier version sliced it into 140 thin strips instead, which showed visible
+   seams between strips. Lighting is a smooth screen-space gradient overlay (fixed
+   per mode, independent of rotation) rather than per-strip shading, so the terminator
+   reads as a soft band instead of a staircase. Switching modes crossfades over time
+   instead of cutting instantly. */
+
+const STOPS = [0, 0.25, 0.5, 0.65, 1];
+const MODE_STOPS = {
+  sunrise:  [[2, 3, 8, 0.85], [2, 3, 8, 0.6], [255, 170, 90, 0.22], [2, 3, 8, 0.05], [2, 3, 8, 0]],
+  night:    [[2, 3, 8, 0.88], [2, 3, 8, 0.85], [2, 3, 8, 0.8], [2, 3, 8, 0.82], [2, 3, 8, 0.85]],
+  panorama: [[2, 3, 8, 0.12], [2, 3, 8, 0.04], [2, 3, 8, 0], [2, 3, 8, 0.04], [2, 3, 8, 0.14]],
+};
+const NIGHT_ALPHA = { sunrise: 0.35, night: 0.95, panorama: 0.05 };
+const RIM_COLOR = { sunrise: [255, 170, 90], night: [92, 200, 255], panorama: [120, 190, 255] };
+const MODE_TRANSITION_MS = 700;
+
+function lerp(a, b, t) { return a + (b - a) * t; }
 
 let texImage = null, texW = 0, texH = 0;
 let nightImage = null;
@@ -881,8 +886,20 @@ let yaw = 0.6, tilt = -0.08;
 let isDragging = false, autoRotate = true;
 let lastPointer = { x: 0, y: 0 };
 let texturesReady = false;
+let prevOrbitalMode = "sunrise";
+let modeTransitionStart = -99999;
 
-const ORBITAL_STRIPS = 140;
+function drawWrappedSlice(img, srcX0, srcW0, dx, dw, dy, dh) {
+  const sx = ((srcX0 % texW) + texW) % texW;
+  if (sx + srcW0 <= texW) {
+    orbitalCtx.drawImage(img, sx, 0, srcW0, texH, dx, dy, dw, dh);
+  } else {
+    const firstW = texW - sx;
+    const firstDw = dw * (firstW / srcW0);
+    orbitalCtx.drawImage(img, sx, 0, firstW, texH, dx, dy, firstDw, dh);
+    orbitalCtx.drawImage(img, 0, 0, srcW0 - firstW, texH, dx + firstDw, dy, dw - firstDw, dh);
+  }
+}
 
 function renderOrbital3D() {
   if (!texturesReady) return;
@@ -900,61 +917,57 @@ function renderOrbital3D() {
   const cx = w * 0.5;
   const cy = h * 0.52 + tilt * h * 0.3;
   const R = h * 0.46;
-  const squish = 1 - Math.abs(tilt) * 0.12;
-  const light = LIGHT_PRESETS[orbitalMode];
-  const yawDeg = yaw * 180 / Math.PI;
-  const thetaStepDeg = 180 / ORBITAL_STRIPS;
-  const srcSliceW = Math.max(1, texW * thetaStepDeg / 360);
+  const ry = R * (1 - Math.abs(tilt) * 0.12);
+  const blend = Math.min(1, (performance.now() - modeTransitionStart) / MODE_TRANSITION_MS);
 
-  for (let i = 0; i < ORBITAL_STRIPS; i++) {
-    const theta = -Math.PI / 2 + (i + 0.5) * (Math.PI / ORBITAL_STRIPS);
-    const sinT = Math.sin(theta), cosT = Math.cos(theta);
-    if (cosT < 0.02) continue;
+  const yawDeg = ((yaw * 180 / Math.PI) % 360 + 360) % 360;
+  const srcW0 = texW * 0.5;
+  const srcX0 = ((yawDeg - 90) / 360) * texW;
 
-    const screenX = cx + R * sinT;
-    const halfH = R * cosT * squish;
-    const stripW = R * (Math.PI / ORBITAL_STRIPS) * cosT + 1.5;
+  orbitalCtx.save();
+  orbitalCtx.beginPath();
+  orbitalCtx.ellipse(cx, cy, R, ry, 0, 0, Math.PI * 2);
+  orbitalCtx.clip();
 
-    const lonDeg = ((yawDeg + theta * 180 / Math.PI) % 360 + 360) % 360;
-    let srcX = (lonDeg / 360) * texW - srcSliceW / 2;
-    if (srcX < 0) srcX += texW;
-    if (srcX + srcSliceW > texW) srcX = texW - srcSliceW;
+  drawWrappedSlice(texImage, srcX0, srcW0, cx - R, 2 * R, cy - ry, 2 * ry);
 
-    const dx0 = screenX - stripW / 2, dy0 = cy - halfH, dh = halfH * 2;
+  const nightAlpha = lerp(NIGHT_ALPHA[prevOrbitalMode], NIGHT_ALPHA[orbitalMode], blend);
+  orbitalCtx.globalAlpha = nightAlpha;
+  orbitalCtx.globalCompositeOperation = "lighter";
+  drawWrappedSlice(nightImage, srcX0, srcW0, cx - R, 2 * R, cy - ry, 2 * ry);
+  orbitalCtx.globalAlpha = 1;
+  orbitalCtx.globalCompositeOperation = "source-over";
 
-    orbitalCtx.drawImage(texImage, srcX, 0, srcSliceW, texH, dx0, dy0, stripW, dh);
+  const grad = orbitalCtx.createLinearGradient(cx - R, 0, cx + R, 0);
+  const fromStops = MODE_STOPS[prevOrbitalMode], toStops = MODE_STOPS[orbitalMode];
+  STOPS.forEach((pos, i) => {
+    const c0 = fromStops[i], c1 = toStops[i];
+    const r = lerp(c0[0], c1[0], blend), g = lerp(c0[1], c1[1], blend), b = lerp(c0[2], c1[2], blend), a = lerp(c0[3], c1[3], blend);
+    grad.addColorStop(pos, `rgba(${r | 0},${g | 0},${b | 0},${a.toFixed(3)})`);
+  });
+  orbitalCtx.fillStyle = grad;
+  orbitalCtx.fillRect(cx - R, cy - ry, 2 * R, 2 * ry);
 
-    const diffuse = Math.max(0, sinT * light.dir[0] + cosT * light.dir[2]);
-    const shade = Math.min(1, light.ambient + diffuse * 1.1);
-    if (shade < 1) {
-      orbitalCtx.fillStyle = `rgba(2,3,8,${1 - shade})`;
-      orbitalCtx.fillRect(dx0, dy0, stripW, dh);
-    }
+  orbitalCtx.restore();
 
-    if (diffuse < 0.3) {
-      const shadowFactor = 1 - diffuse / 0.3;
-      orbitalCtx.globalAlpha = shadowFactor;
-      orbitalCtx.globalCompositeOperation = "lighter";
-      orbitalCtx.drawImage(nightImage, srcX, 0, srcSliceW, texH, dx0, dy0, stripW, dh);
-      orbitalCtx.globalAlpha = 1;
-      orbitalCtx.globalCompositeOperation = "source-over";
-    }
+  const rimFrom = RIM_COLOR[prevOrbitalMode], rimTo = RIM_COLOR[orbitalMode];
+  const rim = [lerp(rimFrom[0], rimTo[0], blend), lerp(rimFrom[1], rimTo[1], blend), lerp(rimFrom[2], rimTo[2], blend)];
+  orbitalCtx.save();
+  orbitalCtx.shadowColor = `rgba(${rim[0] | 0},${rim[1] | 0},${rim[2] | 0},.9)`;
+  orbitalCtx.shadowBlur = 14;
+  orbitalCtx.strokeStyle = `rgba(${rim[0] | 0},${rim[1] | 0},${rim[2] | 0},.55)`;
+  orbitalCtx.lineWidth = 2;
+  orbitalCtx.beginPath();
+  orbitalCtx.ellipse(cx, cy, R, ry, 0, 0, Math.PI * 2);
+  orbitalCtx.stroke();
+  orbitalCtx.restore();
 
-    if (orbitalMode === "sunrise" && diffuse < 0.22) {
-      const glow = (1 - diffuse / 0.22) * 0.45;
-      orbitalCtx.fillStyle = `rgba(${light.rim[0]},${light.rim[1]},${light.rim[2]},${glow})`;
-      orbitalCtx.fillRect(dx0, dy0, stripW, dh);
-    }
+  document.getElementById("orbitalAngle").textContent = Math.round(yawDeg) + "°";
+}
 
-    const edge = 1 - cosT;
-    if (edge > 0.8) {
-      const rimA = (edge - 0.8) / 0.2 * 0.55;
-      orbitalCtx.fillStyle = `rgba(${light.rim[0]},${light.rim[1]},${light.rim[2]},${rimA})`;
-      orbitalCtx.fillRect(dx0, dy0, stripW, dh);
-    }
-  }
-
-  document.getElementById("orbitalAngle").textContent = Math.round(((yawDeg % 360) + 360) % 360) + "°";
+function runOrbitalTransition() {
+  renderOrbital3D();
+  if (performance.now() - modeTransitionStart < MODE_TRANSITION_MS) requestAnimationFrame(runOrbitalTransition);
 }
 
 function updateOrbitalCaption() {
@@ -964,10 +977,13 @@ function updateOrbitalCaption() {
 
 document.querySelectorAll("#orbitalModes .mode-btn").forEach(btn => {
   btn.addEventListener("click", () => {
+    if (btn.dataset.mode === orbitalMode) return;
     document.querySelectorAll("#orbitalModes .mode-btn").forEach(b => b.classList.toggle("active", b === btn));
+    prevOrbitalMode = orbitalMode;
     orbitalMode = btn.dataset.mode;
+    modeTransitionStart = performance.now();
     updateOrbitalCaption();
-    renderOrbital3D();
+    runOrbitalTransition();
   });
 });
 
