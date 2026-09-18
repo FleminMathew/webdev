@@ -61,7 +61,7 @@ img{max-width:100%;}
 .hud-logo-text{display:flex;flex-direction:column;line-height:1.1;}
 .hud-logo-text strong{font-family:var(--font-display);font-size:.95rem;letter-spacing:.12em;}
 .hud-logo-text small{color:var(--text-dim);font-size:.6rem;letter-spacing:.15em;}
-.hud-links{display:flex;gap:22px;}
+.hud-links{display:flex;gap:16px;flex-wrap:wrap;row-gap:6px;}
 .hud-links a{font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);position:relative;padding:4px 0;}
 .hud-links a:hover{color:var(--cyan);}
 .hud-links a::after{content:'';position:absolute;left:0;bottom:0;height:1px;width:0;background:var(--cyan);transition:width .25s;}
@@ -270,6 +270,32 @@ main section{padding:110px 6vw;position:relative;}
 .detail-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:30px;}
 .detail-actions{display:flex;gap:14px;flex-wrap:wrap;}
 
+/* ---------- about page ---------- */
+.about-stats{margin:26px 0 8px;justify-content:flex-start;gap:44px;}
+.value-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
+.value-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;backdrop-filter:blur(10px);}
+.value-card h4{font-size:.92rem;color:var(--cyan);margin-bottom:8px;}
+.value-card p{font-size:.85rem;margin:0;}
+.people-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;}
+.person-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;backdrop-filter:blur(10px);}
+.person-avatar{width:64px;height:64px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:1.1rem;color:#fff;box-shadow:0 0 20px rgba(0,0,0,.3);}
+.person-card h4{font-size:.9rem;margin-bottom:4px;}
+.person-card p{font-size:.78rem;color:var(--text-dim);margin:0;}
+
+/* ---------- contact page ---------- */
+.contact-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:26px;max-width:900px;margin-top:30px;}
+@media(max-width:720px){.contact-grid{grid-template-columns:1fr;}}
+.contact-info-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:26px;backdrop-filter:blur(10px);}
+.contact-info-card h4{color:var(--cyan);font-size:.85rem;letter-spacing:.04em;text-transform:uppercase;margin:18px 0 6px;}
+.contact-info-card h4:first-child{margin-top:0;}
+.contact-info-card p{font-size:.88rem;margin:0;}
+.contact-form-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:26px;backdrop-filter:blur(10px);
+  display:flex;flex-direction:column;gap:16px;}
+.contact-success{display:none;font-size:.85rem;color:var(--ok);border:1px solid rgba(92,255,176,.3);background:rgba(92,255,176,.08);
+  border-radius:8px;padding:12px 14px;margin:0;}
+.contact-success.show{display:block;animation:fadeUp .4s ease;}
+
 /* ---------- orbital viewing deck ---------- */
 #orbital{text-align:center;}
 .orbital-viewer{position:relative;max-width:960px;margin:0 auto 30px;border-radius:14px;overflow:hidden;
@@ -327,8 +353,8 @@ main section{padding:110px 6vw;position:relative;}
 .field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin-bottom:24px;}
 .field{display:flex;flex-direction:column;gap:6px;}
 .field span{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);}
-.field select,.field input{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text);padding:11px 12px;border-radius:6px;font-size:.95rem;}
-.field select:focus,.field input:focus{outline:none;border-color:var(--cyan);}
+.field select,.field input,.field textarea{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text);padding:11px 12px;border-radius:6px;font-size:.95rem;font-family:var(--font-body);resize:vertical;}
+.field select:focus,.field input:focus,.field textarea:focus{outline:none;border-color:var(--cyan);}
 .field-label-block{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;}
 
 .craft-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-bottom:26px;}

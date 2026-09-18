@@ -48,7 +48,11 @@ const CATALOG = [
 
   // Sightseeing
   { id:"s-olympus",  category:"sightseeing", region:"olympus", name:"Olympus Mons Summit Overlook",
-    tags:["Panoramic","Once-in-a-lifetime"], price:"¤75K excursion", photo:"images/olympus-blue-sunrise.jpg", photoLabel:"Blue-Light Summit Sunrise",
+    tags:["Panoramic","Once-in-a-lifetime"], price:"¤75K excursion",
+    photos:[
+      { url:"images/olympus-blue-sunrise.jpg", label:"Blue-Light Summit Sunrise" },
+      { url:"images/olympus-everest-comparison.jpg", label:"Olympus Mons vs. Everest" },
+    ],
     desc:"A glass observation deck at the caldera rim of the tallest volcano in the Solar System — twice the height of Everest, visible curvature of the planet below." },
   { id:"s-valles",   category:"sightseeing", region:"valles", name:"Valles Marineris Canyon Rim",
     tags:["Scenic","Photography"], price:"¤68K excursion", photo:"images/valles-overlook.jpg", photoLabel:"Canyon Rim Overlook",
@@ -443,8 +447,9 @@ const GALLERY_TEMPLATES = {
 
 function galleryFor(item) {
   const orbital = item.region === "phobos";
+  const realPhotos = item.photos || (item.photo ? [{ url: item.photo, label: item.photoLabel }] : []);
   return GALLERY_TEMPLATES[item.category].map((label, i) => {
-    if (i === 0 && item.photo) return { label: item.photoLabel || label, url: item.photo };
+    if (realPhotos[i]) return { label: realPhotos[i].label || label, url: realPhotos[i].url };
     return { label, url: makeSceneDataURL(item.id + "::" + label + i, sceneKindFromLabel(label), orbital) };
   });
 }
@@ -827,6 +832,92 @@ document.getElementById("detailViewMap").addEventListener("click", () => {
 
 syncDetailFromHash();
 
+/* ============ STATIC PAGES (About / Contact, hash-routed) ============ */
+
+const STATIC_PAGES = ["about", "contact"];
+
+function openStaticPage(name) {
+  STATIC_PAGES.forEach(n => {
+    const el = document.getElementById(n + "View");
+    const isTarget = n === name;
+    el.classList.toggle("open", isTarget);
+    el.setAttribute("aria-hidden", isTarget ? "false" : "true");
+    if (isTarget) el.scrollTop = 0;
+  });
+  document.body.style.overflow = "hidden";
+  if (name === "contact") document.getElementById("contactSuccess").classList.remove("show");
+}
+
+function closeStaticPages() {
+  STATIC_PAGES.forEach(n => {
+    const el = document.getElementById(n + "View");
+    el.classList.remove("open");
+    el.setAttribute("aria-hidden", "true");
+  });
+  document.body.style.overflow = "";
+}
+
+function exitStaticPage() {
+  if (location.hash === "#about" || location.hash === "#contact") {
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+  closeStaticPages();
+}
+
+function syncStaticPageFromHash() {
+  if (location.hash === "#about") return openStaticPage("about");
+  if (location.hash === "#contact") return openStaticPage("contact");
+  closeStaticPages();
+}
+
+window.addEventListener("hashchange", syncStaticPageFromHash);
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (document.getElementById("aboutView").classList.contains("open") || document.getElementById("contactView").classList.contains("open")) {
+    exitStaticPage();
+  }
+});
+document.getElementById("aboutBack").addEventListener("click", exitStaticPage);
+document.getElementById("contactBack").addEventListener("click", exitStaticPage);
+
+const PEOPLE = [
+  { name: "Capt. Elena Voss", role: "Founder & Chief Pilot", initials: "EV" },
+  { name: "Dr. Kian Osei", role: "Chief Terraforming Officer", initials: "KO" },
+  { name: "Naledi Chen", role: "Head of Guest Experience", initials: "NC" },
+  { name: "ARIA & TERRA", role: "AI Systems Directors", initials: "AI" },
+];
+
+function avatarGradient(seed) {
+  const h1 = seed % 360, h2 = (seed * 7 + 120) % 360;
+  return `linear-gradient(135deg, hsl(${h1}deg 70% 45%), hsl(${h2}deg 60% 30%))`;
+}
+
+const peopleGrid = document.getElementById("peopleGrid");
+PEOPLE.forEach(p => {
+  const card = document.createElement("div");
+  card.className = "person-card";
+  card.innerHTML = `<div class="person-avatar" style="background:${avatarGradient(hashStr(p.name))}">${p.initials}</div><h4>${p.name}</h4><p>${p.role}</p>`;
+  peopleGrid.appendChild(card);
+});
+
+document.getElementById("aboutPlanBtn").addEventListener("click", () => {
+  exitStaticPage();
+  document.getElementById("planner").scrollIntoView({ behavior: "smooth" });
+});
+
+document.getElementById("contactAriaBtn").addEventListener("click", () => {
+  exitStaticPage();
+  openAria();
+});
+
+document.getElementById("contactForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  document.getElementById("contactSuccess").classList.add("show");
+  e.target.reset();
+});
+
+syncStaticPageFromHash();
+
 /* ============ ORBITAL VIEWING DECK ============ */
 
 const ORBITAL_MODES = {
@@ -869,6 +960,16 @@ const MODE_STOPS = {
 const NIGHT_ALPHA = { sunrise: 0.35, night: 0.95, panorama: 0.05 };
 const RIM_COLOR = { sunrise: [255, 170, 90], night: [92, 200, 255], panorama: [120, 190, 255] };
 const MODE_TRANSITION_MS = 700;
+
+const ORBITAL_MARKERS = [
+  { region: "olympus", lonDeg: 15,  latDeg: 20,  label: "Olympus Mons" },
+  { region: "valles",  lonDeg: 80,  latDeg: -8,  label: "Valles Marineris" },
+  { region: "elysium", lonDeg: 150, latDeg: 18,  label: "Elysium" },
+  { region: "phobos",  lonDeg: 205, latDeg: 35,  label: "Phobos Sanctuary" },
+  { region: "arcadia", lonDeg: 260, latDeg: -15, label: "Arcadia" },
+  { region: "tharsis", lonDeg: 320, latDeg: 5,   label: "Tharsis" },
+];
+let orbitalMarkerHits = [];
 
 function lerp(a, b, t) { return a + (b - a) * t; }
 
@@ -962,7 +1063,45 @@ function renderOrbital3D() {
   orbitalCtx.stroke();
   orbitalCtx.restore();
 
+  drawOrbitalMarkers(cx, cy, R, ry, yawDeg);
+
   document.getElementById("orbitalAngle").textContent = Math.round(yawDeg) + "°";
+}
+
+function drawOrbitalMarkers(cx, cy, R, ry, yawDeg) {
+  orbitalMarkerHits = [];
+  ORBITAL_MARKERS.forEach(m => {
+    const diff = ((m.lonDeg - yawDeg + 540) % 360) - 180;
+    if (Math.abs(diff) > 88) return;
+    const t = diff / 90;
+    const fade = Math.cos(t * Math.PI / 2);
+    if (fade < 0.05) return;
+
+    const x = cx + t * R;
+    const v = (90 - m.latDeg) / 180;
+    const y = (cy - ry) + v * (2 * ry);
+
+    orbitalCtx.save();
+    orbitalCtx.globalAlpha = fade;
+    orbitalCtx.shadowColor = "rgba(92,241,255,.9)";
+    orbitalCtx.shadowBlur = 8;
+    orbitalCtx.fillStyle = "#5cf1ff";
+    orbitalCtx.beginPath();
+    orbitalCtx.arc(x, y, 4, 0, Math.PI * 2);
+    orbitalCtx.fill();
+    orbitalCtx.shadowBlur = 0;
+
+    orbitalCtx.font = "600 11px Rajdhani, sans-serif";
+    orbitalCtx.textAlign = "center";
+    orbitalCtx.lineWidth = 3;
+    orbitalCtx.strokeStyle = "rgba(2,3,8,.85)";
+    orbitalCtx.strokeText(m.label, x, y - 10);
+    orbitalCtx.fillStyle = "#dff6ff";
+    orbitalCtx.fillText(m.label, x, y - 10);
+    orbitalCtx.restore();
+
+    orbitalMarkerHits.push({ region: m.region, x, y });
+  });
 }
 
 function runOrbitalTransition() {
@@ -988,23 +1127,49 @@ document.querySelectorAll("#orbitalModes .mode-btn").forEach(btn => {
 });
 
 const dragHint = document.getElementById("orbitalDragHint");
+let orbitalDragMoved = 0;
+
+function orbitalCanvasPoint(e) {
+  const rect = orbitalCanvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (orbitalCanvas.width / rect.width),
+    y: (e.clientY - rect.top) * (orbitalCanvas.height / rect.height),
+  };
+}
+function hitOrbitalMarker(pt) {
+  return orbitalMarkerHits.find(m => Math.hypot(m.x - pt.x, m.y - pt.y) < 14);
+}
+
 orbitalCanvas.addEventListener("pointerdown", (e) => {
   isDragging = true;
   autoRotate = false;
+  orbitalDragMoved = 0;
   lastPointer = { x: e.clientX, y: e.clientY };
   orbitalCanvas.setPointerCapture(e.pointerId);
   dragHint.classList.add("hide");
 });
 orbitalCanvas.addEventListener("pointermove", (e) => {
-  if (!isDragging) return;
+  if (!isDragging) {
+    const hit = hitOrbitalMarker(orbitalCanvasPoint(e));
+    orbitalCanvas.style.cursor = hit ? "pointer" : "grab";
+    return;
+  }
   const dx = e.clientX - lastPointer.x, dy = e.clientY - lastPointer.y;
+  orbitalDragMoved += Math.abs(dx) + Math.abs(dy);
   yaw += dx * 0.012;
   tilt = Math.max(-0.35, Math.min(0.35, tilt + dy * 0.004));
   lastPointer = { x: e.clientX, y: e.clientY };
   renderOrbital3D();
 });
-orbitalCanvas.addEventListener("pointerup", () => {
+orbitalCanvas.addEventListener("pointerup", (e) => {
   isDragging = false;
+  if (orbitalDragMoved < 6) {
+    const hit = hitOrbitalMarker(orbitalCanvasPoint(e));
+    if (hit) {
+      setActiveDest(hit.region);
+      document.getElementById("destinations").scrollIntoView({ behavior: "smooth" });
+    }
+  }
   setTimeout(() => { if (!isDragging) autoRotate = true; }, 3000);
 });
 
